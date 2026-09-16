@@ -17,10 +17,18 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.14.3"
+          gradle-version: "9.6.0"
 
       - name: Build the app
-        run: gradle assembleDebug --no-daemon
+        run: |
+          set -o pipefail
+          gradle assembleDebug --no-daemon 2>&1 | tee build.log
+
+      - name: Show why the build failed
+        if: failure()
+        run: |
+          msg=$( { grep -E -A 8 "What went wrong|error:" build.log || tail -n 30 build.log; } | head -n 40 | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::error::${msg}"
 
       - name: Name the app file
         run: cp app/build/outputs/apk/debug/app-debug.apk mohave-browser.apk
